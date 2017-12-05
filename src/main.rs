@@ -48,7 +48,15 @@ fn process(info: &MesosTaskInfo) -> () {
 
 	info.items.iter().for_each(|item| {
 		println!("{:?}", item);
-		unzip(&fetch(&mut core, &client, &item.uri, &info.sandbox_directory).unwrap());
+		let path = fetch(&mut core, &client, &item.uri, &info.sandbox_directory).unwrap();
+		match path.extension() {
+			Some(ext) if ext == "zip" => {
+				println!("Unzipping {}", path.display());
+				unzip(&path);
+			},
+			Some(_) => (),
+			None => ()			
+		}
 	})
 }
 
