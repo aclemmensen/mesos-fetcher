@@ -12,12 +12,16 @@
             ]
         },
         {
-            "label": "run",
+            "label": "check",
             "type": "shell",
-            "command": "cargo run",
+            "command": "cargo check",
             "problemMatcher": [
                 "$rustc"
-            ]
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

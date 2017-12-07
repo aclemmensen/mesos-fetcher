@@ -13,7 +13,7 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use futures::{Future, Stream};
 use hyper::Client;
-use hyper::client::{HttpConnector, FutureResponse};
+use hyper::client::HttpConnector;
 use tokio_core::reactor::Core;
 
 
@@ -55,7 +55,7 @@ fn process(info: &MesosTaskInfo) -> () {
 				unzip(&path);
 			},
 			Some(_) => (),
-			None => ()			
+			None => ()
 		}
 	})
 }
@@ -95,7 +95,7 @@ fn unzip(path: &PathBuf) -> () {
 
 fn fetch(core: &mut Core, client: &Client<HttpConnector>, uri: &URI, dest: &String) -> Result<PathBuf, hyper::Error> {
 	println!("Fetching {:?}", uri);
-	let parsed: hyper::Uri = uri.value.parse().unwrap();
+	let parsed: hyper::Uri = uri.value.parse().expect("Could not parse fetch URI");
 	let dest_path = build_path(&parsed, dest);
 	println!("Fetching {} to {:?}", uri.value, dest_path);
 	let outfile = &std::fs::File::create(&dest_path)?;
@@ -103,6 +103,7 @@ fn fetch(core: &mut Core, client: &Client<HttpConnector>, uri: &URI, dest: &Stri
 
 	let work = client.get(parsed).and_then(|res| {
 		println!("Response {}", res.status());
+		
 		res.body().for_each(|chunk| {
 			outwriter
 				.write_all(&chunk)
@@ -111,13 +112,23 @@ fn fetch(core: &mut Core, client: &Client<HttpConnector>, uri: &URI, dest: &Stri
 		})
 	});
 
-	core.run(work)?;
+	core.run(work);
 	outfile.sync_all()?;
 	Ok(dest_path)
 }
 
 fn main() {
-	match parse(&"{\"sandbox_directory\": \"C:\\\\temp\\\\fetchtest\", \"items\": [{\"uri\": {\"value\":\"http://some/zip/url\"}, \"action\": \"fetch\"}]}".to_string()) {
+	let data = r#"
+		{
+			"sandbox_directory": "C:\\temp\\testcrap",
+			"items": [
+				{"uri": {"value": "http://192.168.10.75/dump/sqlgateway/sqlgateway-a7fa07e.zip"}, "action": "fetch"},
+				{"uri": {"value": "http://192.168.10.75/dump/sqlgateway.html"}, "action": "fetch"}
+			]
+		}
+	"#;
+
+	match parse(&data.to_string()) {
 		Ok(data) => process(&data),
 		Err(err) => println!("{}", err)
 	};
